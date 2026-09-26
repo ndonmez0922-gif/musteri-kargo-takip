@@ -550,3 +550,560 @@
     </script>
 </body>
 </html>
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Müşteri ve Kargo Takip Sistemi</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome İkonları -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = { theme: { extend: { colors: { primary: '#4f46e5', secondary: '#3730a3' } } } }
+    </script>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+
+    <!-- ================= 1. YÖNETİCİ PANELİ (SATICI EKRANI) ================= -->
+    <div id="admin-view" class="hidden">
+        <header class="bg-gradient-to-r from-indigo-600 to-indigo-800 text-white shadow-lg">
+            <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid fa-address-book text-3xl"></i>
+                    <h1 class="text-2xl font-bold tracking-wide">Yönetici Paneli (Satıcı Ekranı)</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm bg-indigo-700 px-4 py-2 rounded-lg shadow-inner hidden md:block">
+                        <i class="fa-regular fa-clock mr-2"></i><span id="live-clock"></span>
+                    </div>
+                    <button onclick="openSettingsModal()" class="bg-indigo-900 hover:bg-black px-3 py-2 rounded-lg text-sm transition">
+                        <i class="fa-solid fa-gear mr-1"></i> Site Domain Ayarı
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-6 py-8">
+            <!-- İstatistikler -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">Toplam Müşteri</p>
+                        <h3 id="stat-total-customers" class="text-3xl font-bold text-gray-800 mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-users"></i></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">Toplam Ciro</p>
+                        <h3 id="stat-total-revenue" class="text-3xl font-bold text-emerald-600 mt-1">0 ₺</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-wallet"></i></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">VIP Müşteriler</p>
+                        <h3 id="stat-vip-count" class="text-3xl font-bold text-amber-600 mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-crown"></i></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium">Aktif Siparişler</p>
+                        <h3 id="stat-total-orders" class="text-3xl font-bold text-blue-600 mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xl"><i class="fa-solid fa-box-open"></i></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <!-- Ekleme Formu -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-1">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fa-solid fa-user-plus text-indigo-600 mr-2"></i> Yeni Müşteri & Kargo Kaydı
+                    </h2>
+                    <form id="customer-form" class="space-y-4">
+                        <input type="hidden" id="edit-index" value="">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Müşteri Adı Soyadı</label>
+                            <input type="text" id="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Telefon (Örn: 5551234567)</label>
+                            <input type="text" id="contact" placeholder="5XXXXXXXXX" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Alışveriş Tutarı (₺)</label>
+                            <input type="number" id="amount" step="0.01" min="0" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Ürün / İletişim Notları</label>
+                            <textarea id="notes" rows="2" placeholder="Örn: 2 adet tişört..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-600 focus:outline-none"></textarea>
+                        </div>
+                        
+                        <div class="p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
+                            <span class="text-xs font-bold text-gray-700 uppercase block"><i class="fa-solid fa-truck-fast mr-1"></i> Kargo Durum Bilgileri</span>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[11px] text-gray-500 mb-1">Sipariş Tarihi</label>
+                                    <input type="date" id="order-date" class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-gray-500 mb-1">Tahmini Teslimat</label>
+                                    <input type="date" id="delivery-date" class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[11px] text-gray-500 mb-1">Sipariş Takip Kodu</label>
+                                    <input type="text" id="order-queue" placeholder="Örn: SRV-101" class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-gray-500 mb-1">Kargo Durumu</label>
+                                    <select id="cargo-status" class="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none bg-white">
+                                        <option value="Hazırlanıyor">📦 Hazırlanıyor</option>
+                                        <option value="Yolda">🚚 Yolda</option>
+                                        <option value="Dağıtımda">⚡ Dağıtımda</option>
+                                        <option value="Teslim Edildi">✅ Teslim Edildi</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex space-x-2">
+                            <button type="submit" id="save-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition shadow-md">
+                                <i class="fa-solid fa-check mr-1"></i> Kaydet
+                            </button>
+                            <button type="button" id="cancel-edit" onclick="resetForm()" class="hidden bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2.5 rounded-lg transition">İptal</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Liste Paneli -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-2 flex flex-col">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <h2 class="text-lg font-bold text-gray-800 flex items-center">
+                            <i class="fa-solid fa-list-check text-indigo-600 mr-2"></i> Müşteri & Kargo Listesi
+                        </h2>
+                        <div class="relative w-full md:w-72">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fa-solid fa-search"></i></span>
+                            <input type="text" id="search-input" onkeyup="renderTable()" placeholder="İsim, kod veya telefon ara..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <button onclick="filterCategory('ALL')" id="filter-all" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white transition">Tümü</button>
+                        <button onclick="filterCategory('VIP')" id="filter-vip" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">👑 VIP (5000₺+)</button>
+                        <button onclick="filterCategory('Gold')" id="filter-gold" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">⭐ Gold (2000₺+)</button>
+                        <button onclick="filterCategory('Standart')" id="filter-std" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">👤 Standart</button>
+                    </div>
+
+                    <div class="overflow-x-auto flex-1">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 uppercase">
+                                    <th class="p-3">Kod & Müşteri</th>
+                                    <th class="p-3">İletişim & Not</th>
+                                    <th class="p-3">Tutar & Sınıf</th>
+                                    <th class="p-3">Kargo Durumu</th>
+                                    <th class="p-3 text-right">İşlem & SMS Link</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customer-table-body" class="divide-y divide-gray-100 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ================= 2. MÜŞTERİ TAKİP EKRANI ================= -->
+    <div id="client-view" class="hidden min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col justify-center items-center p-4">
+        <div class="max-w-xl w-full bg-white rounded-2xl shadow-xl overflow-hidden p-8 border border-indigo-50">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner">
+                    <i class="fa-solid fa-box-archive"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800">Kargo & Sipariş Takip Merkezi</h2>
+                <p class="text-xs text-gray-500 mt-1">Sipariş durumunuzu ve kargo detaylarınızı aşağıdan anlık takip edebilirsiniz.</p>
+            </div>
+
+            <!-- Kod Sorgulama -->
+            <div class="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-2">Sipariş Takip Kodunuzu Giriniz</label>
+                <div class="flex gap-2">
+                    <input type="text" id="client-query-code" placeholder="Örn: SRV-101" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm uppercase font-mono focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+                    <button onclick="queryClientOrder()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition">Sorgula</button>
+                </div>
+            </div>
+
+            <!-- Sonuç Kartı -->
+            <div id="client-result-card" class="hidden space-y-6">
+                <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-xl flex justify-between items-center">
+                    <div>
+                        <span class="text-xs text-indigo-500 font-bold uppercase block">Takip Kodu</span>
+                        <span id="res-code" class="text-lg font-mono font-bold text-indigo-900"></span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-indigo-500 font-bold uppercase block">Alıcı</span>
+                        <span id="res-name" class="text-sm font-semibold text-gray-800"></span>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-white border border-gray-200 rounded-xl space-y-4">
+                    <div class="flex justify-between items-center text-sm font-bold text-gray-700 border-b pb-2">
+                        <span>Kargo Durumu:</span>
+                        <span id="res-status-badge" class="px-3 py-1 rounded-full text-xs font-bold"></span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 text-xs">
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-400 block mb-1 font-medium"><i class="fa-regular fa-calendar mr-1"></i> Sipariş Tarihi</span>
+                            <span id="res-order-date" class="font-bold text-gray-800"></span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-400 block mb-1 font-medium"><i class="fa-solid fa-truck-ramp-box mr-1"></i> Tahmini Teslim</span>
+                            <span id="res-delivery-date" class="font-bold text-emerald-600"></span>
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <span class="text-xs text-gray-400 block mb-1 font-medium">Ürün Detayı / Not:</span>
+                        <p id="res-notes" class="text-xs bg-gray-50 p-3 rounded-lg text-gray-700 border border-gray-100"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="client-not-found" class="hidden text-center py-8 text-gray-400">
+                <i class="fa-solid fa-circle-exclamation text-3xl mb-2 text-amber-500"></i>
+                <p class="text-sm font-medium text-gray-700">Bu koda ait aktif bir sipariş bulunamadı.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SMS Gönderme Modalı -->
+    <div id="sms-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl relative">
+            <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center"><i class="fa-solid fa-comment-sms text-indigo-600 mr-2"></i> Müşteriye Takip Linkli SMS Gönder</h3>
+            <div class="mb-4">
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Alıcı Telefon</label>
+                <input type="text" id="sms-phone" readonly class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-700">
+            </div>
+            <div class="mb-4">
+                <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">SMS İçeriği</label>
+                <textarea id="sms-content" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-600 focus:outline-none"></textarea>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeSmsModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm">İptal</button>
+                <button onclick="sendRealSms()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium"><i class="fa-solid fa-paper-plane mr-1"></i> SMS Gönder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ayarlar Modalı -->
+    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl relative">
+            <h3 class="text-lg font-bold text-gray-800 mb-3"><i class="fa-solid fa-globe text-indigo-600 mr-2"></i> Site Domain Ayarı</h3>
+            <p class="text-xs text-gray-500 mb-4">Vercel adresiniz buraya otomatik tanımlanmıştır.</p>
+            <div class="mb-4">
+                <input type="text" id="site-domain-input" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeSettingsModal()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Mantığı -->
+    <script>
+        const defaultTrackingUrl = "https://takip-jet-xi.vercel.app/";
+        let siteDomain = localStorage.getItem('crm_tracking_site') || defaultTrackingUrl;
+
+        const defaultCustomers = [
+            { name: "Ahmet Yılmaz", contact: "5551234567", amount: 6500, notes: "Akıllı saat", date: "2026-09-25", delivery: "2026-09-30", queue: "SRV-101", status: "Hazırlanıyor" },
+            { name: "Ayşe Demir", contact: "5329876543", amount: 2800, notes: "Gümüş kolye", date: "2026-09-26", delivery: "2026-10-02", queue: "SRV-9937", status: "Yolda" }
+        ];
+
+        let customers = [];
+        try {
+            customers = JSON.parse(localStorage.getItem('crm_customers')) || defaultCustomers;
+            if (!localStorage.getItem('crm_customers')) {
+                localStorage.setItem('crm_customers', JSON.stringify(defaultCustomers));
+            }
+        } catch (e) {
+            customers = defaultCustomers;
+        }
+
+        let currentFilter = 'ALL';
+
+        // Sayfa açıldığında URL kontrolü (Hemen çalışır, beyaz ekranı engeller)
+        window.addEventListener('DOMContentLoaded', () => {
+            const domainInput = document.getElementById('site-domain-input');
+            if (domainInput) domainInput.value = siteDomain;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryCode = urlParams.get('kod');
+
+            const adminView = document.getElementById('admin-view');
+            const clientView = document.getElementById('client-view');
+
+            if (queryCode) {
+                // Müşteri ekranını zorla aç
+                if (adminView) adminView.classList.add('hidden');
+                if (clientView) clientView.classList.remove('hidden');
+                
+                const queryCodeInput = document.getElementById('client-query-code');
+                if (queryCodeInput) queryCodeInput.value = queryCode;
+                executeClientQuery(queryCode);
+            } else {
+                // Yönetici panelini aç
+                if (clientView) clientView.classList.add('hidden');
+                if (adminView) adminView.classList.remove('hidden');
+                renderTable();
+                setInterval(() => {
+                    const now = new Date();
+                    const clockEl = document.getElementById('live-clock');
+                    if(clockEl) clockEl.innerText = now.toLocaleDateString('tr-TR') + ' ' + now.toLocaleTimeString('tr-TR');
+                }, 1000);
+            }
+        });
+
+        function saveData() {
+            localStorage.setItem('crm_customers', JSON.stringify(customers));
+            renderTable();
+        }
+
+        function getClassification(amount) {
+            if (amount >= 5000) return { label: 'VIP', class: 'bg-amber-100 text-amber-800 border-amber-200', icon: 'fa-crown' };
+            if (amount >= 2000) return { label: 'Gold', class: 'bg-purple-100 text-purple-800 border-purple-200', icon: 'fa-star' };
+            return { label: 'Standart', class: 'bg-blue-100 text-blue-800 border-blue-200', icon: 'fa-user' };
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('customer-form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const editIndex = document.getElementById('edit-index').value;
+                    const name = document.getElementById('name').value;
+                    const contact = document.getElementById('contact').value;
+                    const amount = parseFloat(document.getElementById('amount').value);
+                    const notes = document.getElementById('notes').value;
+                    const orderDate = document.getElementById('order-date').value || new Date().toISOString().split('T')[0];
+                    const deliveryDate = document.getElementById('delivery-date').value || new Date(Date.now() + 3*86400000).toISOString().split('T')[0];
+                    const orderQueue = document.getElementById('order-queue').value.trim() || 'SRV-' + Math.floor(1000 + Math.random() * 9000);
+                    const cargoStatus = document.getElementById('cargo-status').value;
+
+                    const customerData = { name, contact, amount, notes, date: orderDate, delivery: deliveryDate, queue: orderQueue, status: cargoStatus };
+
+                    if (editIndex === "") {
+                        customers.unshift(customerData);
+                    } else {
+                        customers[editIndex] = customerData;
+                        resetForm();
+                    }
+                    saveData();
+                    this.reset();
+                });
+            }
+        });
+
+        function renderTable() {
+            const tbody = document.getElementById('customer-table-body');
+            const searchInput = document.getElementById('search-input');
+            if (!tbody) return;
+            const searchQuery = searchInput ? searchInput.value.toLowerCase() : '';
+            tbody.innerHTML = '';
+            let totalRevenue = 0, vipCount = 0;
+
+            customers.forEach((cust, index) => {
+                totalRevenue += cust.amount;
+                const cat = getClassification(cust.amount);
+                if (cat.label === 'VIP') vipCount++;
+
+                const matchesSearch = cust.name.toLowerCase().includes(searchQuery) || 
+                                      cust.contact.toLowerCase().includes(searchQuery) || 
+                                      cust.queue.toLowerCase().includes(searchQuery);
+
+                const matchesCategory = currentFilter === 'ALL' || cat.label === currentFilter;
+
+                if (matchesSearch && matchesCategory) {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-50 transition border-b border-gray-100";
+                    tr.innerHTML = `
+                        <td class="p-3"><div class="inline-block bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded text-xs font-mono">#${cust.queue}</div><div class="font-bold text-gray-800">${cust.name}</div></td>
+                        <td class="p-3"><div class="text-xs text-gray-700"><i class="fa-solid fa-phone mr-1"></i>${cust.contact}</div><div class="text-[11px] text-gray-500">${cust.notes || '-'}</div></td>
+                        <td class="p-3"><div class="font-semibold">${cust.amount.toLocaleString('tr-TR')} ₺</div><span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${cat.class}"><i class="fa-solid ${cat.icon} mr-1"></i>${cat.label}</span></td>
+                        <td class="p-3 text-xs"><span class="px-2.5 py-1 rounded-full font-bold ${getStatusStyle(cust.status)}">${cust.status}</span><div class="text-[10px] text-gray-400 mt-1">Teslim: ${cust.delivery}</div></td>
+                        <td class="p-3 text-right space-x-1">
+                            <button onclick="openSmsModal(${index})" class="px-2.5 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 text-xs font-semibold"><i class="fa-solid fa-paper-plane mr-1"></i> SMS</button>
+                            <button onclick="editCustomer(${index})" class="p-1.5 bg-blue-50 text-blue-600 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="deleteCustomer(${index})" class="p-1.5 bg-red-50 text-red-600 rounded"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+
+            const totalCustEl = document.getElementById('stat-total-customers');
+            const totalRevEl = document.getElementById('stat-total-revenue');
+            const vipCountEl = document.getElementById('stat-vip-count');
+            const totalOrdEl = document.getElementById('stat-total-orders');
+
+            if (totalCustEl) totalCustEl.innerText = customers.length;
+            if (totalRevEl) totalRevEl.innerText = totalRevenue.toLocaleString('tr-TR') + ' ₺';
+            if (vipCountEl) vipCountEl.innerText = vipCount;
+            if (totalOrdEl) totalOrdEl.innerText = customers.length;
+        }
+
+        function getStatusStyle(status) {
+            if(status === 'Hazırlanıyor') return 'bg-amber-100 text-amber-800';
+            if(status === 'Yolda') return 'bg-blue-100 text-blue-800';
+            if(status === 'Dağıtımda') return 'bg-purple-100 text-purple-800';
+            if(status === 'Teslim Edildi') return 'bg-emerald-100 text-emerald-800';
+            return 'bg-gray-100 text-gray-800';
+        }
+
+        function openSmsModal(index) {
+            const cust = customers[index];
+            const phoneInput = document.getElementById('sms-phone');
+            const contentInput = document.getElementById('sms-content');
+            const modal = document.getElementById('sms-modal');
+
+            if (phoneInput) phoneInput.value = cust.contact;
+            const trackingLink = `${siteDomain}?kod=${cust.queue}`;
+            if (contentInput) contentInput.value = `Sayin ${cust.name}, siparisiniz alindi. Kargo Durumu: ${cust.status}. Takip Linkiniz: ${trackingLink}`;
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        function closeSmsModal() {
+            const modal = document.getElementById('sms-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function sendRealSms() {
+            const phoneInput = document.getElementById('sms-phone');
+            const contentInput = document.getElementById('sms-content');
+            if (phoneInput && contentInput) {
+                window.location.href = `sms:${phoneInput.value}?body=${encodeURIComponent(contentInput.value)}`;
+            }
+            closeSmsModal();
+        }
+
+        function editCustomer(index) {
+            const cust = customers[index];
+            document.getElementById('edit-index').value = index;
+            document.getElementById('name').value = cust.name;
+            document.getElementById('contact').value = cust.contact;
+            document.getElementById('amount').value = cust.amount;
+            document.getElementById('notes').value = cust.notes;
+            document.getElementById('order-date').value = cust.date;
+            document.getElementById('delivery-date').value = cust.delivery;
+            document.getElementById('order-queue').value = cust.queue;
+            document.getElementById('cargo-status').value = cust.status;
+            
+            const saveBtn = document.getElementById('save-btn');
+            const cancelBtn = document.getElementById('cancel-edit');
+            if (saveBtn) saveBtn.innerHTML = 'Güncelle';
+            if (cancelBtn) cancelBtn.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetForm() {
+            const form = document.getElementById('customer-form');
+            const saveBtn = document.getElementById('save-btn');
+            const cancelBtn = document.getElementById('cancel-edit');
+            if (form) form.reset();
+            document.getElementById('edit-index').value = "";
+            if (saveBtn) saveBtn.innerHTML = 'Kaydet';
+            if (cancelBtn) cancelBtn.classList.add('hidden');
+        }
+
+        function deleteCustomer(index) {
+            if (confirm("Silinsin mi?")) {
+                customers.splice(index, 1);
+                saveData();
+            }
+        }
+
+        function filterCategory(cat) {
+            currentFilter = cat;
+            renderTable();
+        }
+
+        function openSettingsModal() {
+            const modal = document.getElementById('settings-modal');
+            if (modal) {
+                modal.classList.add('flex');
+                modal.classList.remove('hidden');
+            }
+        }
+
+        function closeSettingsModal() {
+            const domainInput = document.getElementById('site-domain-input');
+            const modal = document.getElementById('settings-modal');
+            if (domainInput) {
+                siteDomain = domainInput.value;
+                localStorage.setItem('crm_tracking_site', siteDomain);
+            }
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function queryClientOrder() {
+            const codeInput = document.getElementById('client-query-code');
+            if (!codeInput) return;
+            let code = codeInput.value.trim().toUpperCase();
+            if(!code) return;
+            if(!code.startsWith('SRV-') && !code.startsWith('#')) code = 'SRV-' + code;
+            code = code.replace('#','');
+            window.history.pushState({}, '', `?kod=${code}`);
+            executeClientQuery(code);
+        }
+
+        function executeClientQuery(code) {
+            let allCusts = [];
+            try {
+                allCusts = JSON.parse(localStorage.getItem('crm_customers')) || defaultCustomers;
+            } catch (e) {
+                allCusts = defaultCustomers;
+            }
+
+            const found = allCusts.find(c => c.queue && c.queue.trim().toUpperCase() === code.trim().toUpperCase());
+            const resultCard = document.getElementById('client-result-card');
+            const notFound = document.getElementById('client-not-found');
+
+            if(found) {
+                document.getElementById('res-code').innerText = '#' + found.queue;
+                document.getElementById('res-name').innerText = found.name;
+                document.getElementById('res-order-date').innerText = found.date;
+                document.getElementById('res-delivery-date').innerText = found.delivery || 'Belirtilmedi';
+                document.getElementById('res-notes').innerText = found.notes || 'Not bulunmuyor.';
+                
+                const badge = document.getElementById('res-status-badge');
+                if (badge) {
+                    badge.innerText = found.status;
+                    badge.className = "px-3 py-1 rounded-full text-xs font-bold " + getStatusStyle(found.status);
+                }
+
+                if (resultCard) resultCard.classList.remove('hidden');
+                if (notFound) notFound.classList.add('hidden');
+            } else {
+                if (resultCard) resultCard.classList.add('hidden');
+                if (notFound) notFound.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
