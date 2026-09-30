@@ -276,14 +276,18 @@
 
         let customers = [];
         try {
-            const appVersion = "v3";
+            const appVersion = "v4";
             if (localStorage.getItem('crm_version') !== appVersion) {
-                localStorage.removeItem('crm_customers');
+                // Versiyon değiştiğinde mevcut listeyi koru ama versiyonu güncelle
+                if (!localStorage.getItem('crm_customers')) {
+                    localStorage.setItem('crm_customers', JSON.stringify(defaultCustomers));
+                }
                 localStorage.setItem('crm_version', appVersion);
             }
 
             customers = JSON.parse(localStorage.getItem('crm_customers')) || defaultCustomers;
-            if (!localStorage.getItem('crm_customers')) {
+            if (!customers.length) {
+                customers = defaultCustomers;
                 localStorage.setItem('crm_customers', JSON.stringify(defaultCustomers));
             }
         } catch (e) {
@@ -297,7 +301,7 @@
             if (domainInput) domainInput.value = siteDomain;
 
             const urlParams = new URLSearchParams(window.location.search);
-            const queryCode = urlParams.get('kod');
+            let queryCode = urlParams.get('kod');
 
             const adminView = document.getElementById('admin-view');
             const clientView = document.getElementById('client-view');
@@ -306,6 +310,8 @@
                 if (adminView) adminView.classList.add('hidden');
                 if (clientView) clientView.classList.remove('hidden');
                 
+                // Kod temizliği ve eşleştirme
+                queryCode = queryCode.trim().toUpperCase();
                 const queryCodeInput = document.getElementById('client-query-code');
                 if (queryCodeInput) queryCodeInput.value = queryCode;
                 executeClientQuery(queryCode);
@@ -344,7 +350,7 @@
                     const notes = document.getElementById('notes').value;
                     const orderDate = document.getElementById('order-date').value || new Date().toISOString().split('T')[0];
                     const deliveryDate = document.getElementById('delivery-date').value || new Date(Date.now() + 3*86400000).toISOString().split('T')[0];
-                    const orderQueue = document.getElementById('order-queue').value.trim() || 'SRV-' + Math.floor(1000 + Math.random() * 9000);
+                    const orderQueue = document.getElementById('order-queue').value.trim().toUpperCase() || 'SRV-' + Math.floor(1000 + Math.random() * 9000);
                     const cargoStatus = document.getElementById('cargo-status').value;
 
                     const customerData = { name, contact, amount, notes, date: orderDate, delivery: deliveryDate, queue: orderQueue, status: cargoStatus };
@@ -530,7 +536,16 @@
                 allCusts = defaultCustomers;
             }
 
-            const found = allCusts.find(c => c.queue && c.queue.trim().toUpperCase() === code.trim().toUpperCase());
+            // Gelen kodu temizle ve büyük harfe çevir
+            const cleanCode = code.replace('?', '').replace('KOD=', '').trim().toUpperCase();
+
+            // Tüm kayıtlar arasında esnek arama yap (Tam eşleşme veya içerme)
+            const found = allCusts.find(c => {
+                if (!c.queue) return false;
+                const q = c.queue.trim().toUpperCase();
+                return q === cleanCode || q === 'SRV-' + cleanCode || cleanCode.includes(q);
+            });
+
             const resultCard = document.getElementById('client-result-card');
             const notFound = document.getElementById('client-not-found');
 
